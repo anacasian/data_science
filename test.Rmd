@@ -1,0 +1,17 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+```
+
+```{r}
+test_data_vbase=read_excel("excel.xls", sheet = "T2.1", skip = 1, col_names = TRUE)
+```
+
