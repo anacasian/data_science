@@ -7,11 +7,236 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+###Libraries and functions
 ```{r}
-library(readxl)
+
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(modelr)
+library(broom)
+library(ggrepel)
+library(forcats)
+library(gtools)
+library(kableExtra)
+library(purrr)
+library(na.tools)
+library(here)
+options(digits = 2)
+options(na.action = na.warn)
+
+theme_set(theme_bw())
+knitr::opts_chunk$set(fig.align = "center", message = FALSE)
+
+#personalized functions
+personalized_kable_function <- function(data) {
+   knitr::kable(data, align = "c", format.args = list(big.mark = "'", decimal.mark = ",")) %>% 
+       kable_styling(bootstrap_options = c("striped", "hover","condensed","bordered"),full_width = F, position = "center")
+    
+}
+personalized_Theme_for_plots <- function(data) { 
+  theme_classic()+
+  theme(axis.ticks.length = unit(5,"pt"),
+        axis.text = element_text(size=11),  
+        axis.title = element_text(size=15), 
+        plot.title = element_text( hjust=0.5, face='bold', size = 15), 
+        plot.subtitle = element_text( hjust=0.5, face='italic', size = 12)
+  )
+}
+
+
+
+```
+
+
+###T2.1
+```{r}
+library(stringr)
+
+data_UNIL_T2.1=read_excel("excel.xls", sheet = "T2.1", skip = 1, col_names = TRUE)
+
+#check names
+data_UNIL_T2.1 %>% 
+  colnames()
+
+#assigned names
+names(data_UNIL_T2.1)[1]<-"Faculty"
+names(data_UNIL_T2.1)[2]<-"Nationality_and_sex"
+
+
+#autofill missing values
+data_UNIL_T2.1 <- data_UNIL_T2.1 %>%
+  fill(Faculty, Nationality_and_sex)
+
+
+
+data_UNIL_T2.1 <- data_UNIL_T2.1%>%
+                  gather(key= "Years", value = "Etudiants", -c(Faculty, Nationality_and_sex))%>%
+                  filter(Nationality_and_sex != "Tot")%>%
+  rename(Variable = Nationality_and_sex)%>%
+  mutate(Variable = replace(Variable, Variable=="CH","Suisse_nationaity"))%>%
+  mutate(Variable = replace(Variable, Variable=="Etr","Foreign_nationaity"))
+  
+
+
+```
+
+###T2.2
+```{r}
+data_UNIL_T2.2=read_excel("excel.xls", sheet = "T2.2", skip = 1, col_names = TRUE)
+
+#check names
+data_UNIL_T2.2 %>% 
+  colnames()
+
+#assigned names
+names(data_UNIL_T2.2)[1]<-"Faculty"
+names(data_UNIL_T2.2)[2]<-"Place_of_residence"
+
+
+
+#autofill missing values
+data_UNIL_T2.2 <- data_UNIL_T2.2 %>%
+  fill(Faculty, Place_of_residence)
+
+data_UNIL_T2.2 <- data_UNIL_T2.2%>%
+                  gather(key= "Years", value = "Etudiants", -c(Faculty, Place_of_residence))%>%
+                  filter(Place_of_residence != "Tot")%>%
+  rename(Variable = Place_of_residence)%>%
+  mutate(Variable = replace(Variable, Variable=="CH","Other cantons"))%>%
+  mutate(Variable = replace(Variable, Variable=="Etr","Foreign_residence"))
+
+
+
+```
+
+###Full database
+```{r}
+full_data=rbind(data_UNIL_T2.1,data_UNIL_T2.2)
+
+```
+
+
+###Plots F&H over the years(Total)
+```{r}
+
+Sex_line_plot= full_data %>%
+  filter(Variable == c("F","H")) %>%
+  filter(Faculty== "Total UNIL") %>%
+  group_by(Variable) %>%
+  ggplot(aes(Years ,Etudiants)) +
+  geom_line(linetype = "dashed", aes(group = Variable, color= Variable)) +
+  ggtitle("Female and Males") +
+  labs(x = "Years", y = "Number of Etudnats") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5, face = "bold"))
+Sex_line_plot
+
+
+
+```
+
+
+###Plots nationality over the years(Total)
+```{r}
+Nationality_line_plot= full_data %>%
+  filter(Variable == c("Foreign_nationaity","Suisse_nationaity")) %>%
+  filter(Faculty== "Total UNIL") %>%
+  group_by(Variable) %>%
+  ggplot(aes(Years ,Etudiants)) +
+  geom_line(linetype = "dashed", aes(group = Variable, color= Variable)) +
+  ggtitle("Nationality") +
+  labs(x = "Years", y = "Number of Etudinats") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5, face = "bold"))
+
+Nationality_line_plot
+```
+
+
+```{r}
+
+
 ```
 
 ```{r}
-test_data_vbase=read_excel("excel.xls", sheet = "T2.1", skip = 1, col_names = TRUE)
+full_data%>%
+  group_by (Faculty, Variable)%>%
+  filter(Variable == c("F","H")) %>%
+  filter(Years==c("2006","2016"))%>%
+  mutate(pct_change = (Etudiants/lag(Etudiants) - 1) * 100)%>%
+  personalized_kable_function()%>%
+  scroll_box(width = "500px", height = "200px")
+
+```
+
+
+
+```{r}
+full_data%>%
+  group_by (Faculty, Variable)%>%
+  filter(Variable == c("Foreign_nationaity","Suisse_nationaity")) %>%
+  filter(Years==c("2006","2016"))%>%
+  mutate(pct_change = (Etudiants/lag(Etudiants) - 1) * 100)%>%
+  filter(Years=="2016")%>%
+  personalized_kable_function()%>%
+  scroll_box(width = "500px", height = "200px")
+
+```
+
+```{r}
+
+library(tidyverse)
+maria=full_data%>%
+  filter(Variable == c("F","H")) %>%
+  filter(Faculty== "Total UNIL") %>%
+  group_by (Variable)%>%
+  mutate(pct_change = (Etudiants/lag(Etudiants) - 1) * 100)
+
+
+Sex_line_plot= maria %>%
+  group_by(Variable) %>%
+  ggplot(aes(Years ,pct_change)) +
+  geom_line(linetype = "dashed", aes(group = Variable, color= Variable)) +
+  ggtitle("Female and Males") +
+  labs(x = "Years", y = "Number of Etudnats") +
+  geom_text(aes(label=round(pct_change, digits = 2), vjust = -0.3, size = 4, 
+            fontface = "bold")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5, face = "bold"))
+Sex_line_plot
+
+Nationality_line_plot= full_data %>%
+  filter(Variable == c("Foreign_nationaity","Suisse_nationaity")) %>%
+  filter(Faculty== "Total UNIL") %>%
+  group_by(Variable) %>%
+  ggplot(aes(Years ,pct_change)) +
+  geom_line(linetype = "dashed", aes(group = Variable, color= Variable)) +
+  ggtitle("Nationality") +
+  labs(x = "Years", y = "Number of Etudinats") +
+  geom_text(aes(label=pct_change, vjust = -0.3, size = 4, 
+            fontface = "bold")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5, face = "bold"))
+
+Nationality_line_plot
+
+
+```
+ 
+ 
+###excel extract 
+```{r}
+
+library(xlsx)
+write.xlsx(data_UNIL_T2.1, "Unil2.xlsx")
+write.xlsx(data_UNIL_T2.2, "Unil1.xlsx")
+
+
 ```
 
