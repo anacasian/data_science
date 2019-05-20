@@ -36,7 +36,7 @@ personalized_kable_function <- function(data) {
     
 }
 personalized_Theme_for_plots <- function(data) { 
-  theme_classic()+
+  theme_bw()+
   theme(axis.ticks.length = unit(5,"pt"),
         axis.text = element_text(size=11),  
         axis.title = element_text(size=15), 
@@ -149,7 +149,7 @@ Nationality_line_plot= full_data %>%
   geom_line(linetype = "dashed", aes(group = Variable, color= Variable)) +
   ggtitle("Nationality") +
   labs(x = "Years", y = "Number of Etudinats") +
-  theme_bw() +
+  personalized_Theme_for_plots()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -162,6 +162,8 @@ Nationality_line_plot
 
 ```
 
+
+###Tables per faculty to see which one we can use in the analysis, other graphs: SEX
 ```{r}
 full_data%>%
   group_by (Faculty, Variable)%>%
@@ -174,6 +176,7 @@ full_data%>%
 ```
 
 
+###Tables per faculty to see which one we can use in the analysis, other graphs: Nationality
 
 ```{r}
 full_data%>%
@@ -187,10 +190,12 @@ full_data%>%
 
 ```
 
+
+
 ```{r}
 
-library(tidyverse)
-maria=full_data%>%
+
+full_data%>%
   filter(Variable == c("F","H")) %>%
   filter(Faculty== "Total UNIL") %>%
   group_by (Variable)%>%
